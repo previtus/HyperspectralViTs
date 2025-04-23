@@ -49,10 +49,10 @@ In the paper we present three newly created OxHyper datasets with labels for 1.)
 If you find the HyperspectralViTs models or the OxHyper datasets useful in your research, please consider citing our work. 
 
 ```
-@article{ruzicka_HyperspectralViTs_2025
+@article{Ruzicka2025HyperspectralViTs,
   author={Růžička, Vít and Markham, Andrew},
   journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing}, 
-  title={HyperspectralViTs: General Hyperspectral Models for On-Board Remote Sensing}, 
+  title={Hyperspectral\uppercase{V}i\uppercase{T}s: General Hyperspectral Models for On-Board Remote Sensing}, 
   year={2025},
   volume={18},
   number={},
