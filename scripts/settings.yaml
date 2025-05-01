@@ -1,0 +1,200 @@
+# NOTE: Remember to set your local paths according to your own setup!
+#       These can also be set in the arguments to python
+
+experiment_name: "HyperspectralViT_run"
+experiment_path: "" # will be filled
+seed: None # global seed, for reproducibility
+
+resume_from_checkpoint: False # Load weights from a checkpoint before training
+experiment_folder: "/CODEBASE/experiments"  # <<CHANGE TO YOUR PATH
+
+wandb:
+  wandb_project: "hyperspectral_vits" # <<ADJUST AS NEEDED
+  wandb_entity: "WandbUsername" # <<CHANGE TO YOUR WANDB USERNAME
+
+dataloader:
+  train_batch_size: 32 # batch size for train
+  val_batch_size: 32 # and test and val dataloaders
+  num_workers: 4 # number of workers for the dataloader, should be set to the number of CPUs on the machine
+
+dataset:
+  input_products:
+    specific_products: ['mag1c', 640, 550, 460] # mag1c and RGB
+    band_ranges: []
+
+  output_products: ["labelbinary"]
+
+  multitemporal: # Experimental feature only!
+    enabled: False
+    bases: ["B", "A"]
+    multitemporal_idx_as_y: "None"
+
+  # auxiliary_products is used to load mf products for visualisation, even if the model doesn't use them
+  #auxiliary_products: ["mag1c"]
+  auxiliary_products: []
+
+  root_folder: "/DATASETS/starcop_allbands_mini" # <<CHANGE TO YOUR PATH
+  train_csv: "train_mini10.csv" # < needed
+  val_csv: "" # < if set, will save best_val models
+  test_csv: "test_mini10.csv"   # < needed
+  custom_csv: ""
+
+  # where to save features and temporary data
+  feature_folder: "/CODEBASE/parameters" # <<CHANGE TO YOUR PATH
+
+
+  tiler:
+    mode: "regular" # "regular" (or experimental "per_pixel")
+    input_size: 512 # by default we saved all the data as 512x512 large tiles that get further sub-tiled
+    tile_size: 128
+    tile_overlap: 64
+    # When to turn on tiling: (by default only for train)
+    train: True
+    test: False
+    val: False
+    emit_thr_for_valid_data_in_tile: 0.9 # each tiny extracted tile will be check if it has at least this % of valid data (0.9 = 90%)
+    # for experimental per-pixel datasets:
+    perpixel_how_many_from_each: 100 # takes this amount of samples from each of the source 512x512 tiles
+
+  augment: True # active only for train dataset (rotate, h.flip, v.flip)
+  # special - load surrounding area before the rotation (will always see at top/left corner btw)
+  augment_rotation_load_surrounding_area: 0.4 # by 40% on both sides
+
+  normalisation:
+    mode_input: "hardcoded" # "hardcoded" or "from_data"
+    # mode_input: "from_data" # "hardcoded" or "from_data"
+    # only used with "from_data":
+    save_load_from: "cooked_normaliser_values" # rename this accordingly to your used data
+    max_style: "max_outliers" # "max" or "max_outliers"
+    max_outlier_percentile: 3
+    override_products: [] # these products won't be included int the "from_data" computation
+
+  # experimental feature
+  feature_extractor: []
+
+  format: "AVIRIS" # select which data are we loading - allows AVIRIS, EMIT or EMIT_MINERALS
+  num_channels: None # will be filled
+
+  # Experimental:
+  presave_to_scratch: False
+  path_to_scratch: "" # if empty, will be assigned << os.environ['SCRATCH']
+
+model:
+  # choose one:
+  #architecture: "efficientvit"
+  architecture: "segformer"
+  #architecture: "unet"
+
+  num_classes: 1
+  optimizer: "adam" # unless the optimizer is set in the model handler code
+  lr: 0.001
+  loss: 'BCEWithLogitsLoss'
+
+  task: "segmentation" # "segmentation" (mainly) / "regression" (only experimetal)
+
+  multiply_loss_by_mag1c: True
+  positive_weight: 1
+  weighted_random_sampler: True # used in DataModule
+
+  extra_metrics: [] # "AUPRC"
+
+  log_train_loss_every_batch_i: 100
+  log_train_images_every_batch_i: 1000 # log them way less frequently
+
+  hyperstarcop: # = unet
+    backbone: 'mobilenet_v2'
+    pretrained: 'None' # or 'imagenet', but only if we have 3 channels
+    activation: 'None' # last layer activation - None or sigmoid
+    custom_config: 'None'
+
+  transformer: # = segformer
+    backbone: "nvidia/mit-b0" # which encoder architecture to use?
+    pretrained: False # < True work only with custom_config: None
+
+    custom_config:
+      conv1x1: # Settings for added spectral convolutions in the following layers:
+            SegformerOverlapPatchEmbeddings: False
+      strides:
+          keep_default: True # keep default, at whatever setting they are in this architecture
+          strides_custom: [4,2,2,2]
+      upscale:
+          preclassifier: False # True to insert an upscale just before the classifier (after the fuse and dropout)
+          decimate_channels_ratio: 2 # scales resolution at the cost of the hidden dimension (with 2 typically from 256 to 128)
+          upscale_layers: 2 # num of the conv layers to do the upscaling ~ influences the speed and window for each final px
+      # Sanity checks on the loss
+      loss_overrides:
+          multilabel_override: False
+          loss_override_to: "BCEWithLogitsLoss"
+
+    # This can be used as an easy switch into the more detailed settings above ^
+    custom_config_features:
+      conv1x1: False
+      stride: False
+      upscale: False
+
+  efficientvit:
+    backbone: "b1" # b0 to b3
+    custom_config:
+      conv1x1: False
+      head_stride: 8 # 8 is default, causes /8 resolution throughout = Stride
+      upscale_layers: 0 # 0 is default off, either 1 or 2
+
+  classical_baseline:
+    threshold: 500
+
+  load_path: "" # loads the model weights, both for evaluation and for training. When training remember to set a larger number of max_epochs
+  auto_continue: False
+
+training:
+  accelerator: gpu
+  devices: 1
+  max_epochs: 50 # number of epochs
+  finetuning: False # If its set to a number, it will instead add that many epochs to the loaded checkpoint
+
+  val_check_interval: None
+  train_log_every_n_steps: 50
+
+  visualiser:
+    samples_per_batch: 4
+    wait_global_steps: 5
+    # options: 'rgb', 'labelbinary', 'mag1c', 'prediction', 'prediction01', 'differences', 'all_inputs', 'valid_mask'
+    bands: ['rgb', 'mag1c', 'labelbinary', 'prediction', 'differences']
+    target: 'wandb' # or 'local'
+
+evaluation:
+  # which evaluation to run
+  train: False
+  test: True
+  val: True
+  plot_save: False # by default we just want the scores when we run evaluate.py
+  plot_show: False
+
+matched_filter:
+  num_iter: 30
+
+debug:
+  no_normalisation: False
+  no_tiling: False
+  recalculate_normalisation: False
+
+# Used for payloads or when timing
+payload:
+  bands: 4
+  resolution: 128
+  batch_size: 1
+  device: "CPU" # or "MYRIAD"
+  num_images: 16 # use a multiple of batch size
+  save_folder: "/ADJUST_PATH/timing_logs"
+
+  timing_rand_data: False # True # use random data instead of dataloaders
+  timing_model_from: "manual" # Select one: checkpoint/config/manual
+
+  warmup: 2 # how many batches we start without measuring time
+  how_many: 10 # how many batches we measure
+
+# Hydra folder management
+hydra:
+  job:
+    chdir: True
+  run:
+    dir: experiments/${experiment_name}

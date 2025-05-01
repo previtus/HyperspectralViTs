@@ -41,9 +41,51 @@
 
 In the paper we present three newly created OxHyper datasets with labels for 1.) <a href="https://huggingface.co/datasets/previtus/OxHyperRealCH4">real methane leak events</a>, 2.) <a href="https://huggingface.co/datasets/previtus/OxHyperSyntheticCH4">synthetic methane leak events</a> and 3.) dataset <a href="https://huggingface.co/datasets/previtus/OxHyperMinerals_Train">mineral identification</a>. In these, we provide wide range of hyperspectral bands from EMIT, computed methane enhancement products and also manually checked labels. We also use a new version of previously released STARCOP dataset of events from the AVIRIS-NG data, which can be collectively explored in <a href="https://huggingface.co/collections/previtus/starcop-67f13cf30def71591f281a41">here</a>. For more details see the paper.
 
+**Downloading datasets**
+
+Please note that created datasets are very large. As an example, to download the OxHyperSyntheticCH4 dataset (of 226 GB), run this:
+
+```bash
+git lfs install
+git clone https://huggingface.co/datasets/previtus/OxHyperSyntheticCH4
+# it is recommended to delete the .git folder to save space:
+rm -rdf OxHyperSyntheticCH4/.git
+```
+We recommend first trying some of the miniaturized datasets versions, for example: https://huggingface.co/datasets/previtus/starcop_allbands_mini
+
+For an updated list of datasets please check the main page: https://huggingface.co/previtus
+
 ### Code examples
 
-*WIP! I am currently working on preparing and cleaning this codebase (including some nice demo notebooks etc.)! If you are interested in using it and have some specific requests for demos, let me know! The datasets are all already public on HF and they have some initial data exploration demos.*
+**Install**
+
+```bash
+conda create -c conda-forge -n hyper_env python=3.11.4 mamba
+conda activate hyper_env
+
+pip install git+https://github.com/previtus/HyperspectralViTs.git
+```
+
+**Inference**
+
+Demo notebooks for showing model inference on Google Colab are being prepared.
+
+**Training**
+
+To reproduce the same training process as reported in the paper, you will need to download the appropriate OxHyper dataset first, and prepare the coding environment.
+Remember to adjust paths in _scripts/settings.yaml_, as these will be used as defaults for the runs. In _/bash_ we provide couple of example training and evaluation scripts (with local overwrites to settings, so remember to adjust these too). 
+
+```bash
+# Check possible parameters with:
+!python3 -m scripts.train --help
+
+# Or run one of the prepared training scripts used for the paper models (remember to download and adjust the paths to the training datasets)
+./bash/demos_train_hyper_segformer.sh
+./bash/demos_train_hyper_efficientvit.sh
+
+# You may also check data exploration demos listed in:
+.bash/demos_data_explore.sh
+```
 
 ## Citation
 If you find the HyperspectralViTs models or the OxHyper datasets useful in your research, please consider citing our work. 
@@ -52,7 +94,7 @@ If you find the HyperspectralViTs models or the OxHyper datasets useful in your 
 @article{Ruzicka2025HyperspectralViTs,
   author={Růžička, Vít and Markham, Andrew},
   journal={IEEE Journal of Selected Topics in Applied Earth Observations and Remote Sensing}, 
-  title={Hyperspectral\uppercase{V}i\uppercase{T}s: General Hyperspectral Models for On-Board Remote Sensing}, 
+  title={Hyperspectral{V}i{T}s: General Hyperspectral Models for On-Board Remote Sensing}, 
   year={2025},
   volume={18},
   number={},
