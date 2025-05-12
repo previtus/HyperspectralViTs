@@ -47,7 +47,7 @@ Please note that created datasets are very large. As an example, to download the
 
 ```bash
 git lfs install
-git clone https://huggingface.co/datasets/previtus/OxHyperSyntheticCH4
+git clone git@hf.co:datasets/previtus/OxHyperSyntheticCH4
 # it is recommended to delete the .git folder to save space:
 rm -rdf OxHyperSyntheticCH4/.git
 ```
